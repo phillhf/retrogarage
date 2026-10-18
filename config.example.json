@@ -1,0 +1,10 @@
+{
+  "port": 8080,
+  "host": "0.0.0.0",
+  "romDir": "roms",
+  "saveDir": "saves",
+  "authUser": "",
+  "authPass": "",
+  "httpsCert": "",
+  "httpsKey": ""
+}

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0e1116">
+  <title>Retro Garage</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Retro Garage</h1>
+    <input id="search" type="search" placeholder="Spiel suchen…" autocomplete="off" aria-label="Spiel suchen">
+  </header>
+
+  <nav id="systems" class="systems" aria-label="Systeme"></nav>
+
+  <main>
+    <section id="recent-wrap" hidden>
+      <h2>Zuletzt gespielt</h2>
+      <div id="recent" class="grid"></div>
+    </section>
+    <section>
+      <h2 id="list-title">Alle Spiele</h2>
+      <div id="games" class="grid"></div>
+      <p id="empty" class="empty" hidden></p>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

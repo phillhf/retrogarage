@@ -1,0 +1,17 @@
+# Lokale Einstellungen (enthalten ggf. das Passwort)
+config.json
+
+# ROMs gehören nicht ins Repository – nur die leeren Systemordner
+roms/**
+!roms/*/
+!roms/*/.gitkeep
+
+# Spielstände sind persönliche Daten
+saves/
+
+# Lokale EmulatorJS-Kopie für den Offline-Betrieb
+public/emulatorjs/
+
+node_modules/
+.claude/
+*.log

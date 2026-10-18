@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <title>Retro Garage</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <style>
+    html, body {
+      margin: 0; height: 100%; background: #000; overflow: hidden;
+      touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    }
+    #game { position: fixed; inset: 0; }
+    /* Immer oben rechts: zurück ins Hauptmenü (liegt über Spiel, Ladeanzeige und Fehlermeldung) */
+    #back {
+      position: fixed; top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right));
+      z-index: 10000; display: flex; align-items: center; gap: 10px;
+      height: 52px; padding: 0 20px; border: 0; border-radius: 999px;
+      background: rgba(30, 34, 44, .85); color: #fff; font: 600 18px system-ui, sans-serif; cursor: pointer;
+      white-space: nowrap; transition: opacity .4s;
+    }
+    /* Während des Spiels etwas zurückgenommen, bleibt aber gut sichtbar – rot, wenn nicht gesichert werden konnte */
+    #back.dim:not(.alert) { opacity: .6; }
+    /* Das Menü-Symbol von EmulatorJS (☰) nach links oben verlegen, damit oben rechts der Zurück-Knopf Platz hat */
+    .ejs_virtualGamepad_open { right: auto !important; left: max(10px, env(safe-area-inset-left)) !important; }
+    #back.alert { background: #b3261e; }
+    #sync { font-weight: 400; font-size: 15px; }
+    #sync:empty { display: none; }
+    #sync.ok { color: #9be39f; }
+    #sync.busy { color: #ffd479; }
+    #sync.error { color: #fff; font-weight: 700; }
+    #tap {
+      position: fixed; inset: 0; z-index: 999; display: grid; place-content: center; gap: 18px;
+      background: #0e1116; color: #eef1f6; font: 20px system-ui, sans-serif; text-align: center; padding: 24px;
+    }
+    #tap[hidden] { display: none; }
+    #tap h1 { margin: 0; font-size: 30px; }
+    #tap button {
+      justify-self: center; min-width: 260px; height: 88px; padding: 0 32px; border: 0; border-radius: 999px;
+      background: #e8473b; color: #fff; font: 700 28px system-ui, sans-serif; cursor: pointer;
+    }
+    #tap button[hidden] { display: none; }
+    #tap button.secondary { height: 64px; background: #222835; font-size: 20px; }
+    #tap button:disabled { opacity: .6; }
+    #tap p { margin: 0; color: #8b93a5; font-size: 17px; max-width: 560px; }
+  </style>
+</head>
+<body>
+  <button id="back" type="button" aria-label="Zurück ins Hauptmenü">&#8962; Hauptmenü <span id="sync" aria-live="polite"></span></button>
+  <div id="game"></div>
+  <div id="tap">
+    <h1 id="tap-title"></h1>
+    <p id="tap-info">Lade…</p>
+    <button id="start" type="button" hidden></button>
+    <button id="home" type="button" class="secondary" hidden>Zur Bibliothek</button>
+  </div>
+  <script src="play.js"></script>
+</body>
+</html>
