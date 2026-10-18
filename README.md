@@ -281,6 +281,7 @@ Spielstände werden nur für ROMs angenommen, die tatsächlich im ROM-Ordner lie
 
 ## Rechtliches
 
+- Retro Garage steht unter der [MIT-Lizenz](LICENSE).
 - **ROMs sind nicht enthalten.** Nur Spiele verwenden, die man besitzt und rechtmäßig sichern darf.
 - [EmulatorJS](https://github.com/EmulatorJS/EmulatorJS) steht unter der GPL-3.0 und wird zur Laufzeit vom
   CDN geladen; die enthaltenen Emulatoren haben jeweils eigene Lizenzen.

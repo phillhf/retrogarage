@@ -2,6 +2,7 @@
   "name": "retro-garage",
   "version": "1.0.0",
   "description": "Retro-Konsolen (GB, GBC, GBA, NES, SNES, N64, DS) im Browser – ROMs und Spielstände auf dem eigenen Server",
+  "license": "MIT",
   "main": "server.js",
   "private": true,
   "scripts": {
