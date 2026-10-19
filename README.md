@@ -30,6 +30,7 @@ EmulatorJS-CDN geladen.
 - [Einstellungen](#einstellungen)
 - [Fehlerbehebung](#fehlerbehebung)
 - [Aufbau](#aufbau)
+- [Release veröffentlichen](#release-veröffentlichen)
 - [Rechtliches](#rechtliches)
 
 ## Installation
@@ -94,7 +95,8 @@ im Programmordner starten (Windows: `start.bat`). Einstellungen dann über `conf
 
 ## Aktualisieren und Entfernen
 
-**Aktualisieren:** Neue Version herunterladen und den Installer erneut ausführen, als Installationsort
+**Aktualisieren:** Neue Version von den [Releases](https://github.com/phillhf/retrogarage/releases/latest)
+herunterladen (`RetroGarage-<version>.zip`), entpacken und den Installer erneut ausführen, als Installationsort
 die bestehende Installation angeben. Bei allen anderen Fragen reicht Enter – der Installer schlägt die
 bisherigen Einstellungen vor. Er beendet den laufenden Server, kopiert das Programm und behält
 `config.json`, ROMs und Spielstände. Mit Hintergrunddienst startet der Server automatisch neu, sonst
@@ -261,6 +263,7 @@ public/play.html       Spielseite (play.js): startet EmulatorJS, synchronisiert 
 public/manifest.webmanifest   App-Installation ("Zum Startbildschirm hinzufügen")
 install.bat/.ps1       Installer Windows (installieren, aktualisieren, entfernen)
 install.sh             Installer Linux / Raspberry Pi
+tools/release.js       Release auf GitHub veröffentlichen
 config.example.json    Vorlage für config.json
 roms/<konsole>/        ROMs (nicht im Repository)
 saves/<ordner>/        Spielstände (nicht im Repository)
@@ -278,6 +281,21 @@ saves/<ordner>/        Spielstände (nicht im Repository)
 
 Spielstände werden nur für ROMs angenommen, die tatsächlich im ROM-Ordner liegen, und atomar geschrieben
 (erst vollständig empfangen, dann ersetzt). Mit Passwortschutz gilt die Anmeldung für alle Pfade.
+
+## Release veröffentlichen
+
+```
+node tools/release.js
+```
+
+pusht den aktuellen Stand von `main`, setzt den Versions-Tag, baut das Download-Paket
+`RetroGarage-<version>.zip` und legt das Release auf GitHub an. Die Version ist das Datum plus eine
+laufende Nummer des Tages (z. B. `v2026.10.19.1`). Die Release-Notizen werden aus den Commits seit dem
+letzten Release gebildet; eigene Notizen mit `--notes "…"` oder `--notes-file datei.md`. Mit `--dry-run`
+zeigt das Skript nur an, was passieren würde.
+
+Das Paket enthält nur eingecheckte Dateien – ROMs, Spielstände und `config.json` gelangen nie hinein.
+Voraussetzung: alle Änderungen committet und die GitHub-Kommandozeile angemeldet (`gh auth login`).
 
 ## Rechtliches
 

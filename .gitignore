@@ -15,3 +15,6 @@ public/emulatorjs/
 node_modules/
 .claude/
 *.log
+
+# Release-Pakete (tools/release.js)
+dist/
