@@ -3,6 +3,8 @@
   "host": "0.0.0.0",
   "romDir": "roms",
   "saveDir": "saves",
+  "coverDir": "covers",
+  "covers": true,
   "authUser": "",
   "authPass": "",
   "httpsCert": "",

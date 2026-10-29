@@ -94,7 +94,7 @@ h2 { font-size: 18px; color: var(--muted); font-weight: 600; margin: 22px 0 12px
   font-weight: 800;
   color: var(--muted);
 }
-.game .cover img { width: 100%; height: 100%; object-fit: cover; }
+.game .cover img { width: 100%; height: 100%; object-fit: contain; }
 .game .info { padding: 12px 14px 14px; }
 .game .title { font-size: 17px; font-weight: 600; line-height: 1.25; }
 .game .sys { margin-top: 4px; font-size: 14px; color: var(--muted); }

@@ -95,19 +95,27 @@ function renderGames() {
   document.getElementById('recent').replaceChildren(...rec.map(card));
 }
 
+// Liste laden; solange der Server noch Cover sucht, nach ein paar Sekunden erneut (höchstens 5 Minuten)
+let refreshUntil = Date.now() + 5 * 60 * 1000;
+async function load() {
+  const res = await fetch('/api/roms');
+  library = await res.json();
+  renderSystems();
+  renderGames();
+  if (res.headers.get('X-Covers-Pending') === '1' && Date.now() < refreshUntil) {
+    setTimeout(() => load().catch(() => {}), 4000);
+  }
+}
+
 async function init() {
   if (current !== 'all' && !Object.keys(SHORT).includes(current)) current = 'all';
+  document.getElementById('search').addEventListener('input', renderGames);
   try {
-    const res = await fetch('/api/roms');
-    library = await res.json();
+    await load();
   } catch {
     document.getElementById('empty').hidden = false;
     document.getElementById('empty').textContent = 'Server nicht erreichbar.';
-    return;
   }
-  renderSystems();
-  renderGames();
-  document.getElementById('search').addEventListener('input', renderGames);
 }
 
 init();

@@ -311,7 +311,7 @@ if ($InPlace) {
     # /XO: neuere Dateien am Ziel bleiben erhalten (z. B. eine lokale EmulatorJS-Kopie)
     robocopy (Join-Path $Source 'public') (Join-Path $InstallDir 'public') /E /XO /NFL /NDL /NJH /NJS /NP | Out-Null
     if ($LASTEXITCODE -ge 8) { throw "Kopieren von 'public' fehlgeschlagen (robocopy $LASTEXITCODE)." }
-    foreach ($file in 'server.js', 'package.json', 'README.md', 'LICENSE', 'start.bat', 'install.ps1', 'install.bat', 'config.example.json') {
+    foreach ($file in 'server.js', 'covers.js', 'package.json', 'README.md', 'LICENSE', 'start.bat', 'install.ps1', 'install.bat', 'config.example.json') {
         $from = Join-Path $Source $file
         if (Test-Path $from) { Copy-Item $from $InstallDir -Force }
     }

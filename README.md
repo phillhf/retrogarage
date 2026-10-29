@@ -8,6 +8,7 @@ Die ROMs und alle Spielstände liegen auf dem eigenen Server. Das Auto braucht n
 zum Server; im Browser wird nichts dauerhaft gespeichert, Browserdaten löschen ist also unbedenklich.
 
 - Spielebibliothek mit großen Kacheln, Suche, Filter nach Konsole und „Zuletzt gespielt“
+- Cover und saubere Titel werden automatisch erkannt (libretro-Thumbnails, ohne Konto oder API-Schlüssel)
 - Spiel antippen – es startet sofort mit dem passenden Emulator
 - Bildschirmtasten auf Touch-Displays; sie verschwinden automatisch, sobald ein Controller erkannt wird
 - Spielstände werden automatisch auf dem Server gesichert, mit älteren Versionen als Sicherheitsnetz
@@ -23,6 +24,7 @@ EmulatorJS-CDN geladen.
 - [Installation](#installation)
 - [Aktualisieren und Entfernen](#aktualisieren-und-entfernen)
 - [ROMs ablegen](#roms-ablegen)
+- [Cover und Titel](#cover-und-titel)
 - [Spielen](#spielen)
 - [Spielstände](#spielstände)
 - [Im Auto](#im-auto-android-automotive)
@@ -127,10 +129,31 @@ wird ausdrücklich bestätigt.
 - `.zip` und `.7z` gehen ebenfalls und sparen Datenvolumen im Auto.
 - **Falscher Ordner?** Kein Problem: Der Server erkennt die Konsole an der Dateiendung bzw. an der ROM im
   ZIP (z. B. ein DS-Spiel im GBC-Ordner) und startet den richtigen Emulator. Bei `.7z` zählt der Ordner.
-- **Cover:** Bild mit gleichem Namen daneben legen (`Spiel.png`, `.jpg`, `.webp`).
 - Neue Spiele erscheinen sofort – Seite neu laden genügt, kein Neustart nötig.
-- Der Titel wird aus dem Dateinamen gebildet; Unterstriche, Bindestriche und Angaben in Klammern wie
-  `(Germany)` fallen weg.
+- Am besten funktionieren **No-Intro-Namen** wie `Super Mario World (Europe).sfc`, z. B. mit einem
+  ROM-Umbenenner auf Basis der No-Intro-DATs erzeugt. Dann werden Cover und Titel sicher erkannt.
+
+## Cover und Titel
+
+Der Server sucht zu jedem Spiel automatisch Cover und Titel auf dem
+[libretro-Thumbnail-Server](https://thumbnails.libretro.com) – derselben Quelle, die RetroArch nutzt. Kein
+Konto und kein API-Schlüssel nötig.
+
+- **Zuordnung:** zuerst exakt über den No-Intro-Namen, sonst tolerant: `Super-Mario-World.smc` wird zu
+  „Super Mario World“, `zelda a link to the past.smc` zu „The Legend of Zelda - A Link to the Past“. Bei
+  ZIPs zählt der Name der ROM darin, führende Release-Nummern (`4827 - …`) werden ignoriert.
+- **Fassung:** Gibt es ein Spiel in mehreren Regionen, wird die Region aus dem Dateinamen genommen, sonst
+  in dieser Reihenfolge: Germany, Europe, World, USA, … Kürzel wie `-de` oder `_usa` werden verstanden.
+  Beta-, Demo- und Prototyp-Fassungen werden nur notfalls genommen.
+- **Titel:** aus dem gefundenen Namen, ohne Klammerangaben; „Legend of Zelda, The“ wird zu „The Legend of
+  Zelda“. Ohne Treffer wird der Titel aus dem Dateinamen gebildet.
+- **Im Hintergrund:** Die Bibliothek wartet nie darauf. Neue Spiele zeigen zunächst das Konsolenkürzel,
+  das Cover erscheint nach ein paar Sekunden von selbst.
+- **Zwischenspeicher:** Cover werden einmalig in den Ordner `covers/` geladen und von dort ausgeliefert –
+  das Auto lädt sie also vom eigenen Server. Nicht gefundene Spiele werden wöchentlich erneut gesucht.
+- **Eigenes Cover:** Ein Bild mit gleichem Namen neben der ROM (`Spiel.png`, `.jpg`, `.webp`) hat immer
+  Vorrang – auch, um ein falsch erkanntes Cover zu ersetzen.
+- **Abschalten:** `"covers": false` in `config.json` (oder Umgebungsvariable `COVERS=off`).
 
 ## Spielen
 
@@ -213,11 +236,13 @@ wirken nach einem Neustart des Servers.
 | `host` | `0.0.0.0` | Netzwerkadresse (`127.0.0.1` = nur vom Server selbst erreichbar) |
 | `romDir` | `roms` | ROM-Ordner (relativ zum Programmordner oder absolut) |
 | `saveDir` | `saves` | Spielstände (relativ zum Programmordner oder absolut) |
+| `coverDir` | `covers` | Zwischenspeicher für Cover (relativ zum Programmordner oder absolut) |
+| `covers` | `true` | Cover und Titel automatisch suchen |
 | `authUser` / `authPass` | – | Passwortschutz (HTTP Basic Auth) |
 | `httpsCert` / `httpsKey` | – | HTTPS: Zertifikat und Schlüssel als PEM-Dateien |
 
-Umgebungsvariablen haben Vorrang: `PORT`, `HOST`, `ROM_DIR`, `SAVE_DIR`, `AUTH_USER`, `AUTH_PASS`,
-`HTTPS_CERT`, `HTTPS_KEY`.
+Umgebungsvariablen haben Vorrang: `PORT`, `HOST`, `ROM_DIR`, `SAVE_DIR`, `COVER_DIR`, `COVERS` (`off`),
+`AUTH_USER`, `AUTH_PASS`, `HTTPS_CERT`, `HTTPS_KEY`.
 
 `config.json` enthält das Passwort im Klartext und ist deshalb von Git ausgeschlossen.
 
@@ -250,6 +275,7 @@ Ruckelt ein Spiel, lässt sich ein anderer Kern testen, indem man an die Spielad
 | Auto erreicht den Server nicht | Firewall-Freigabe (Installer als Administrator) bzw. Portweiterleitung im Router prüfen. |
 | „Port ist belegt“ | Anderen Port wählen – Installer erneut ausführen. |
 | Spiel fehlt in der Bibliothek | Dateiendung prüfen (siehe [ROMs ablegen](#roms-ablegen)); Seite neu laden. |
+| Kein oder falsches Cover | ROM mit No-Intro-Namen benennen, oder ein eigenes Bild mit gleichem Namen neben die ROM legen. Der Server braucht Internet zum libretro-Thumbnail-Server. |
 
 Der Server schreibt Meldungen in sein Konsolenfenster (Windows) bzw. ins Journal (Linux).
 
@@ -257,6 +283,7 @@ Der Server schreibt Meldungen in sein Konsolenfenster (Windows) bzw. ins Journal
 
 ```
 server.js              Webserver: Oberfläche, ROM-Liste, ROM-Dateien, Spielstände (nur Node.js-Bordmittel)
+covers.js              Cover- und Titelerkennung über den libretro-Thumbnail-Server (im Hintergrund)
 public/index.html      Spielebibliothek (app.js, style.css)
 public/play.html       Spielseite (play.js): startet EmulatorJS, synchronisiert Spielstände,
                        blendet Bildschirmtasten bei Controller aus
@@ -267,6 +294,7 @@ tools/release.js       Release auf GitHub veröffentlichen
 config.example.json    Vorlage für config.json
 roms/<konsole>/        ROMs (nicht im Repository)
 saves/<ordner>/        Spielstände (nicht im Repository)
+covers/                heruntergeladene Cover und erkannte Titel (titel.json), Zwischenspeicher
 ```
 
 ### Schnittstellen
@@ -276,6 +304,7 @@ saves/<ordner>/        Spielstände (nicht im Repository)
 | `GET` | `/api/roms` | Bibliothek: Spiele je Konsole mit Ablageordner, Titel, Cover, Spielstand ja/nein |
 | `GET` | `/api/config` | Pfad zu EmulatorJS (lokal oder CDN) |
 | `GET` | `/roms/<ordner>/<datei>` | ROM-Datei (mit Range-Unterstützung) |
+| `GET` | `/covers/<ordner>/<datei>.png` | heruntergeladenes Cover |
 | `GET`/`PUT` | `/api/saves/<ordner>/<datei>/sram` | spielinterner Speicher |
 | `GET`/`PUT` | `/api/saves/<ordner>/<datei>/state` | Speicherstand |
 

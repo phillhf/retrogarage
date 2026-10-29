@@ -194,7 +194,7 @@ if [ "$DIR" = "$SOURCE" ]; then
   echo "Installation im Quellordner - nichts zu kopieren."
 else
   cp -R "$SOURCE/public" "$DIR/"
-  for f in server.js package.json README.md LICENSE install.sh config.example.json; do
+  for f in server.js covers.js package.json README.md LICENSE install.sh config.example.json; do
     [ -f "$SOURCE/$f" ] && cp "$SOURCE/$f" "$DIR/"
   done
 fi

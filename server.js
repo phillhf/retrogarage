@@ -5,6 +5,7 @@ const http = require('http');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const { createCoverService } = require('./covers');
 
 // Einstellungen aus config.json (legt der Installer an); Umgebungsvariablen haben Vorrang.
 function loadConfig() {
@@ -37,6 +38,10 @@ const SAVE_MAX_BYTES = 128 * 1024 * 1024;
 const HISTORY_DIR = '.versionen';
 const HISTORY_KEEP = 20;                                  // ältere Versionen je Spielstand
 const HISTORY_MIN_AGE_MS = 10 * 60 * 1000;               // höchstens eine Sicherung alle 10 Minuten
+// Cover und Titel automatisch vom libretro-Thumbnail-Server (abschaltbar mit "covers": false)
+const COVER_DIR = path.resolve(__dirname, process.env.COVER_DIR || config.coverDir || 'covers');
+const COVERS_ENABLED = (process.env.COVERS || '').toLowerCase() !== 'off' && config.covers !== false;
+const coverService = createCoverService({ dir: COVER_DIR, enabled: COVERS_ENABLED });
 
 // Systeme -> EmulatorJS-Core und erlaubte Dateiendungen (.zip/.7z entpackt EmulatorJS selbst)
 const SYSTEMS = {
@@ -110,26 +115,34 @@ function zipEntryNames(file) {
 
 // Erkennt das System eines Spiels an der Endung bzw. an der ROM im ZIP – unabhängig vom Ordner,
 // in dem es liegt. So startet ein Spiel im falschen Ordner trotzdem mit dem richtigen Emulator.
+// Liefert { system, romName } – romName ist bei ZIPs der Name der ROM darin (oft der saubere No-Intro-Name).
 const detectCache = new Map();
 function detectSystem(file, folder) {
   const ext = path.extname(file).toLowerCase();
-  if (SYSTEMS[folder].ext.includes(ext)) return folder;
-  if (EXT_SYSTEM[ext]) return EXT_SYSTEM[ext];
-  if (ext !== '.zip') return ARCHIVE_EXT.includes(ext) ? folder : null;   // .7z: Ordner vertrauen
+  const own = { system: folder, romName: path.basename(file) };
+  if (SYSTEMS[folder].ext.includes(ext)) return own;
+  if (EXT_SYSTEM[ext]) return { system: EXT_SYSTEM[ext], romName: path.basename(file) };
+  if (ext !== '.zip') return ARCHIVE_EXT.includes(ext) ? own : null;   // .7z: Ordner vertrauen
   let stat;
   try { stat = fs.statSync(file); } catch { return null; }
   const key = `${file}|${stat.size}|${stat.mtimeMs}`;
   if (!detectCache.has(key)) {
-    let found = folder;   // ohne erkennbare ROM: dem Ordner vertrauen
+    let found = own;   // ohne erkennbare ROM: dem Ordner vertrauen
     try {
-      const exts = zipEntryNames(file).map((n) => path.extname(n).toLowerCase());
-      const own = exts.find((e) => SYSTEMS[folder].ext.includes(e));
-      const other = exts.find((e) => EXT_SYSTEM[e]);
-      found = own ? folder : other ? EXT_SYSTEM[other] : folder;
+      const roms = zipEntryNames(file).filter((n) => EXT_SYSTEM[path.extname(n).toLowerCase()]);
+      const inFolder = roms.find((n) => SYSTEMS[folder].ext.includes(path.extname(n).toLowerCase()));
+      if (inFolder) found = { system: folder, romName: path.basename(inFolder) };
+      else if (roms.length) found = { system: EXT_SYSTEM[path.extname(roms[0]).toLowerCase()], romName: path.basename(roms[0]) };
     } catch { /* unlesbares ZIP: Ordner vertrauen */ }
     detectCache.set(key, found);
   }
   return detectCache.get(key);
+}
+
+// Titel aus dem Dateinamen: Release-Nummern, Unterstriche, Bindestriche und Klammerangaben entfernen
+function titleFromName(name) {
+  const base = name.replace(/\.[a-z0-9]{1,4}$/i, '').replace(/^\d{1,5}\s*-\s*/, '');
+  return base.replace(/[_.]+|-(?=\S)/g, ' ').replace(/\s*[\[(].*?[\])]\s*/g, ' ').replace(/\s+/g, ' ').trim() || base;
 }
 
 function listRoms() {
@@ -145,18 +158,22 @@ function listRoms() {
       if (COVER_EXT.includes(ext)) covers.set(path.basename(f, path.extname(f)).toLowerCase(), f);
     }
     for (const f of files) {
-      const system = detectSystem(path.join(dir, f), folder);
-      if (!system) continue;
+      const detected = detectSystem(path.join(dir, f), folder);
+      if (!detected) continue;
+      const { system, romName } = detected;
       const base = path.basename(f, path.extname(f));
       const cover = covers.get(base.toLowerCase());
+      // Erkannte Titel/Cover; ein eigenes Cover-Bild im ROM-Ordner hat Vorrang
+      const known = coverService.info(folder, f);
+      coverService.request(folder, f, system, romName);
       let size = 0;
       try { size = fs.statSync(path.join(dir, f)).size; } catch { /* ignorieren */ }
       result[system].games.push({
         file: f,
         folder,   // Ablageort (für ROM-Adresse und Spielstände); "system" bestimmt den Emulator
-        title: base.replace(/[_.]+|-(?=\S)/g, ' ').replace(/\s*[\[(].*?[\])]\s*/g, ' ').trim() || base,
+        title: (known && known.title) || titleFromName(romName),
         size,
-        cover: cover ? `/roms/${folder}/${encodeURIComponent(cover)}` : null,
+        cover: cover ? `/roms/${folder}/${encodeURIComponent(cover)}` : (known && known.cover) || null,
         saved: Object.keys(SAVE_KINDS).some((k) => fs.existsSync(saveFile(folder, f, k))),
       });
     }
@@ -304,7 +321,14 @@ function handle(req, res) {
   }
   if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, 'Methode nicht erlaubt');
 
-  if (pathname === '/api/roms') return sendJson(res, listRoms());
+  if (pathname === '/api/roms') {
+    const data = listRoms();
+    // Solange noch Cover gesucht werden, lädt die Bibliothek die Liste nach
+    return send(res, 200, JSON.stringify(data), {
+      'Content-Type': MIME['.json'],
+      'X-Covers-Pending': coverService.busy() ? '1' : '0',
+    });
+  }
   if (pathname === '/api/config') {
     return sendJson(res, {
       ejsPath: fs.existsSync(path.join(LOCAL_EJS_DIR, 'loader.js'))
@@ -314,6 +338,12 @@ function handle(req, res) {
   }
 
   try {
+    if (pathname.startsWith('/covers/')) {
+      // Nur heruntergeladene Cover, nicht die internen Listen (.index, titel.json)
+      const file = safeJoin(COVER_DIR, pathname.slice('/covers/'.length));
+      if (!file || !file.endsWith('.png') || file.includes(`${path.sep}.`)) return send(res, 403, 'Verboten');
+      return serveFile(req, res, file, true);
+    }
     if (pathname.startsWith('/roms/')) {
       const file = safeJoin(ROM_DIR, pathname.slice('/roms/'.length));
       return file ? serveFile(req, res, file, true) : send(res, 403, 'Verboten');
